@@ -2,9 +2,8 @@ package org.example.Entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Generated;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -14,6 +13,7 @@ import java.time.Instant;
 @Data
 @Document(collection = "NEWS_LETTER_SUBSCRIPTION")
 public class NewsLetterModel {
+    @Indexed(unique = true)
     private String email;
     private Instant created_at=Instant.now();
     private boolean isSubscribed;

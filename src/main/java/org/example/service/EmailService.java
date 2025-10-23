@@ -31,16 +31,19 @@ public class EmailService {
             throw new RuntimeException("Failed to send email", e);
         }
     }
+
     public void sendWelcomeEmail(String to) {
         String subject = "Welcome to SolAi Weekly Newsletter";
-        String body=buildWelcomeEmailTemplate(to);
+        String body = buildWelcomeEmailTemplate(to);
         sendHtmlEmail(to, subject, body);
     }
-    public void sendWeeklyEmail(String to,String content) {
+
+    public void sendWeeklyEmail(String to, String content) {
         String subject = "Weekly Newsletter from SolAi";
-        String body=buildweeklyNewsTemplate(to);
+        String body = buildweeklyNewsTemplate(content);
         sendHtmlEmail(to, subject, body);
     }
+
     private String buildWelcomeEmailTemplate(String to) {
         return """
             <!DOCTYPE html>
@@ -74,14 +77,15 @@ public class EmailService {
                     </div>
                     <div class="footer">
                         <p>© 2023 SolAi. All rights reserved.</p>
-                        <p> 24th Main road, HSR Layout, Bengaluru, Karnataka, 560012</p>
+                        <p>24th Main road, HSR Layout, Bengaluru, Karnataka, 560012</p>
                     </div>
                 </div>
             </body>
             </html>
             """;
     }
-    private String  buildweeklyNewsTemplate(String content) {
+
+    private String buildweeklyNewsTemplate(String content) {
         return """
             <!DOCTYPE html>
             <html>
@@ -107,7 +111,7 @@ public class EmailService {
                         <p>© 2023 SolAi. All rights reserved.</p>
                         <p>24th Main Road,HSR Layout, Bengaluru, Karnataka, 560013</p>
                         <div class="unsubscribe">
-                            <p>Don't want to receive these emails? <a href="#" style="color: #2563eb;">Unsubscribe</a></p>
+                            <p>Don't want to receive these emails? <a href="aisol" style="color: #2563eb;">Unsubscribe</a></p>
                         </div>
                     </div>
                 </div>

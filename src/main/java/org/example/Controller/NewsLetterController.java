@@ -1,23 +1,35 @@
 package org.example.Controller;
 
+import org.apache.logging.log4j.Logger;
 import org.example.Entity.NewsLetterModel;
+import org.example.service.EmailService;
 import org.example.service.NewsLetterService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
+
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+@Slf4j
 @RestController
 @RequestMapping("/newsletter")
-@CrossOrigin(origins = "https://aisolai.vercel.app")
+@CrossOrigin(origins = "http://localhost:3000")
 public class NewsLetterController {
 
     @Autowired
     private NewsLetterService newsletterService;
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @PostMapping("/subscribe")
     public ResponseEntity<Map<String, Object>> subscribe(@RequestParam Map<String, String> request) {
@@ -25,21 +37,16 @@ public class NewsLetterController {
 
         try {
             String email = request.get("email");
-
-            // Basic email validation
             if (email == null || email.trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Email is required");
                 return ResponseEntity.badRequest().body(response);
             }
-
             if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
                 response.put("success", false);
                 response.put("message", "Invalid email format");
                 return ResponseEntity.badRequest().body(response);
             }
-
-            // Subscribe the email
             newsletterService.subscribe(email);
 
             response.put("success", true);

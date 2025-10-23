@@ -1,14 +1,18 @@
 package org.example.service;
 
-import org.example.Constants.constants;
+import com.mongodb.client.result.UpdateResult;
 import org.example.Entity.NewsLetterModel;
 import org.example.Repository.NewsLetterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -17,18 +21,33 @@ public class NewsLetterService {
     private NewsLetterRepository newsletterRepository;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     public void subscribe(String email) {
-        if (newsletterRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("Email already subscribed");
-        }
-        NewsLetterModel newsLetter=new NewsLetterModel();
-        newsLetter.setEmail(email);
-        newsLetter.setSubscribed(true);
-        newsletterRepository.save(newsLetter);
+        Query query = new Query(Criteria.where("email").is(email));
+        NewsLetterModel existing = mongoTemplate.findOne(query, NewsLetterModel.class);
 
+        if (existing != null) {
+            if (existing.isSubscribed()) {
+                throw new RuntimeException("Email is already subscribed to the newsletter.");
+            }
+            Update update = new Update().set("isSubscribed", true);
+            mongoTemplate.updateFirst(query, update, NewsLetterModel.class);
+            log.info("Re-subscribed successfully: {}", email);
+
+            emailService.sendWelcomeEmail(email);
+            return;
+        }
+        NewsLetterModel newSubscriber = new NewsLetterModel();
+        newSubscriber.setEmail(email);
+        newSubscriber.setSubscribed(true);
+        mongoTemplate.save(newSubscriber);
+
+        log.info("New subscription added: {}", email);
         emailService.sendWelcomeEmail(email);
     }
+
     public void weeklyNewsletter(String content) {
         List<NewsLetterModel> subscribedList = newsletterRepository.findByIsSubscribed(true);
 
@@ -43,13 +62,17 @@ public class NewsLetterService {
             }
         }
     }
-
     public void unsubscribe(String email) {
-        NewsLetterModel newsLetterModel=newsletterRepository.findByEmail(email).orElseThrow(() ->new RuntimeException("Email not subscribed"));
-            newsLetterModel.setSubscribed(false);
-            newsletterRepository.save(newsLetterModel);
-            log.info("Unsubscribed from " + newsLetterModel.getEmail());
+        Query query = new Query(Criteria.where("email").is(email));
+        Update update = new Update().set("isSubscribed", false);
+        UpdateResult result = mongoTemplate.updateFirst(query, update, NewsLetterModel.class);
+
+        if (result.getMatchedCount() == 0) {
+            throw new RuntimeException("This email is not subscribed to the newsletter.");
+        }
+        log.info("Successfully unsubscribed: {}", email);
     }
+
     public List<NewsLetterModel> getAllSubscribers() {
         return newsletterRepository.findAll();
     }
